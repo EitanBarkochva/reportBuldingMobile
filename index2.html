@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>מערכת ניהול ופיקוח הנדסי</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 5px; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { background: none; border: none; padding: 12px 20px; cursor: pointer; font-size: 16px; font-weight: bold; color: #666; transition: 0.3s; flex: 0 0 auto; border-radius: 8px 8px 0 0; }
+        .tab-btn:hover { background-color: #f8f9fa; color: #007bff; }
+        .tab-btn.active { border-bottom: 4px solid #007bff; color: #007bff; background-color: #f4f9ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full-width { grid-column: 1 / -1; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; color: #444; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 16px; background-color: #fff; transition: border-color 0.2s; }
+        input:focus, select:focus, textarea:focus { border-color: #80bdff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+        input[readonly] { background-color: #e9ecef; color: #666; cursor: not-allowed; }
+        textarea { resize: vertical; min-height: 100px; }
+        
+        .section-title { margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #007bff; font-size: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-weight: bold;}
+        
+        .search-box { border: 2px solid #007bff; border-radius: 8px; padding: 12px 15px; font-size: 16px; margin-bottom: 20px; width: 100%; box-sizing: border-box; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23007bff" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>'); background-repeat: no-repeat; background-position: left 15px center; padding-left: 40px; }
+        
+        .radio-group { display: flex; gap: 15px; flex-wrap: wrap; }
+        .radio-group label { margin: 0; cursor: pointer; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #ced4da; padding: 12px 20px; border-radius: 8px; flex: 1; justify-content: center; font-size: 15px; transition: 0.2s; }
+        .radio-group input[type="radio"] { width: 20px; height: 20px; margin: 0; accent-color: #007bff; }
+        .radio-group label:has(input:checked) { border-color: #007bff; background-color: #f4f9ff; color: #007bff; font-weight: bold; }
+
+        button { cursor: pointer; border-radius: 8px; border: none; font-family: inherit; transition: 0.2s; }
+        .action-btn { background-color: #28a745; color: white; padding: 16px; font-size: 18px; margin-top: 25px; width: 100%; font-weight: bold; box-shadow: 0 4px 6px rgba(40, 167, 69, 0.2); }
+        .action-btn:hover { background-color: #218838; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(40, 167, 69, 0.3); }
+        .add-btn { background-color: #007bff; color: white; padding: 10px 15px; font-size: 14px; font-weight: bold; }
+        .remove-btn { background-color: #dc3545; color: white; padding: 12px; margin-right: 10px; min-width: 45px; font-weight: bold; border-radius: 8px;}
+        
+        .dynamic-row { display: flex; align-items: center; margin-bottom: 12px; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #e9ecef; gap: 10px; flex-wrap: wrap;}
+        .dynamic-row input { flex: 1; min-width: 120px; margin: 0 !important; }
+
+        .image-block { border: 2px dashed #007bff; padding: 20px; border-radius: 12px; margin-bottom: 15px; background: #f8fbfc; position: relative; text-align: center; }
+        .image-block .remove-img-btn { position: absolute; top: 10px; left: 10px; background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; z-index: 10;}
+        .canvas-toolbar { background: #343a40; padding: 12px; border-radius: 8px; margin-top: 15px; color: white; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+        canvas { border: 2px solid #007bff; border-radius: 8px; cursor: crosshair; display: block; margin: 15px auto 0; max-width: 100%; height: auto; touch-action: none; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
+        
+        #signatureCanvas { border: 2px dashed #999; background: #fffdf2; max-width: 100%; width: 400px; height: 200px; margin: 0 auto; cursor: crosshair; touch-action: none; border-radius: 12px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);}
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        th, td { border-bottom: 1px solid #eee; padding: 15px 12px; text-align: right; }
+        th { background-color: #007bff; color: white; font-weight: bold; }
+        tr:hover { background-color: #f1f8ff; cursor: pointer; }
+        
+        #loadingMsg { background: #007bff; color: white; font-weight: bold; text-align: center; display: none; margin-top: 15px; padding: 15px; border-radius: 8px; font-size: 16px; box-shadow: 0 4px 12px rgba(0,123,255,0.3); position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 90%; max-width: 400px; animation: slideUp 0.3s; }
+        @keyframes slideUp { from { bottom: -50px; opacity: 0; } to { bottom: 20px; opacity: 1; } }
+
+        @media (max-width: 768px) {
+            body { padding: 5px; }
+            .container { padding: 15px; border-radius: 8px; }
+            .form-grid { grid-template-columns: 1fr; gap: 10px; }
+            .dynamic-row { flex-direction: column; align-items: stretch; background: transparent; padding: 0; border: none; border-bottom: 2px dashed #ddd; padding-bottom: 15px; border-radius: 0; }
+            .remove-btn { width: 100%; margin-right: 0; margin-top: 5px; }
+            .radio-group { flex-direction: column; }
+            .action-btn { position: sticky; bottom: 10px; z-index: 100; box-shadow: 0 -2px 15px rgba(0,0,0,0.15); }
+
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; } 
+            tr { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.06); padding: 5px 0; }
+            tr:hover { background-color: #fff; transform: scale(1.02); transition: 0.2s; }
+            td { border: none; border-bottom: 1px solid #f1f1f1; position: relative; padding: 12px 15px 12px 45%; text-align: left; font-size: 15px; }
+            td:last-child { border-bottom: 0; }
+            td:before { position: absolute; right: 15px; top: 12px; width: 45%; white-space: nowrap; font-weight: bold; color: #555; text-align: right; content: attr(data-label); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('formTab', this)">ניהול פרויקט</button>
+        <button class="tab-btn" onclick="switchTab('listTab', this); fetchAllData();">רשימת פרויקטים</button>
+        <button class="tab-btn" onclick="switchTab('reportTab', this); initNewReport();">דוח פיקוח חדש</button>
+        <button class="tab-btn" onclick="switchTab('reportListTab', this); fetchAllData();">רשימת דוחות</button>
+    </div>
+
+    <!-- כרטסת 1: יצירת פרויקט -->
+    <div id="formTab" class="tab-content active">
+        <button class="add-btn" onclick="initNewProject()" style="background:#6c757d; margin-bottom:20px; width: 100%; padding: 12px; font-size: 16px;">+ פרויקט חדש / נקה טופס</button>
+        <div class="form-grid">
+            <div><label>מספר פרויקט</label><input type="text" id="projId" readonly></div>
+            <div><label>תאריך יצירה</label><input type="date" id="projDate" readonly></div>
+            <div class="full-width section-title">פרטי הפרויקט</div>
+            <div><label>שם הפרויקט</label><input type="text" id="projName" placeholder="הכנס שם פרויקט..."></div>
+            <div><label>מיקום</label><input type="text" id="projLocation" placeholder="כתובת או עיר..."></div>
+            <div><label>יזם</label><input type="text" id="projEntrepreneur" placeholder="שם היזם..."></div>
+            <div><label>מהנדס ביצוע</label><input type="text" id="projEngineer" placeholder="שם המהנדס..."></div>
+            <div class="full-width section-title">צוות הפרויקט (לתפוצת מייל) <button class="add-btn" onclick="addWorkerRow()">+ הוסף עובד</button></div>
+        </div>
+        <div id="workersContainer"></div>
+        <button class="action-btn" id="submitProjBtn" onclick="saveProject()">שמור פרויקט 💾</button>
+    </div>
+
+    <!-- כרטסת 2: רשימת פרויקטים -->
+    <div id="listTab" class="tab-content">
+        <input type="text" id="projectSearch" class="search-box" placeholder="חפש לפי פרויקט, עיר, מספר..." onkeyup="filterTable('projectSearch', 'projectsTable')">
+        <table id="projectsTable">
+            <thead><tr><th>מספר פרויקט</th><th>שם הפרויקט</th><th>מיקום</th><th>אנשי צוות</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- כרטסת 3: עריכת / יצירת דוח -->
+    <div id="reportTab" class="tab-content">
+        <div class="form-grid">
+            <div><label>מספר דוח</label><input type="text" id="repId" readonly></div>
+            <div><label>תאריך הבדיקה</label><input type="date" id="repDate"></div>
+            
+            <div class="full-width section-title">פרטי הבדיקה</div>
+            <div class="full-width">
+                <label>בחר פרויקט</label>
+                <select id="repProject"><option value="">טוען פרויקטים...</option></select>
+            </div>
+            
+            <div class="full-width">
+                <label>סוג הבדיקה:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="inspectionType" value="בדיקה פיזית" checked> <span>בדיקה פיזית</span></label>
+                    <label><input type="radio" name="inspectionType" value="בדיקת וידאו"> <span>בדיקת וידאו</span></label>
+                </div>
+            </div>
+
+            <div><label>שם האלמנט הנבדק</label><input type="text" id="repElement" placeholder="למשל: יציקת תקרה קומה 1"></div>
+            <div><label>שם הבודק</label><input type="text" id="repInspector" placeholder="שם המהנדס הבודק"></div>
+
+            <div class="full-width section-title">נוכחים <button class="add-btn" onclick="addDynamicField('attendeesContainer', 'שם הנוכח')">+ הוסף אדם</button></div>
+            <div id="attendeesContainer" class="full-width"></div>
+
+            <div class="full-width section-title">הערות וליקויים <button class="add-btn" onclick="addDynamicField('remarksContainer', 'הערה לתיקון')">+ הוסף הערה</button></div>
+            <div id="remarksContainer" class="full-width"></div>
+
+            <div class="full-width section-title">תיאור הבדיקה <button class="add-btn" onclick="addDynamicField('descriptionsContainer', 'פרטי הבדיקה')">+ הוסף תיאור</button></div>
+            <div id="descriptionsContainer" class="full-width"></div>
+
+            <div class="full-width section-title">סיכום הדוח</div>
+            <div class="full-width"><textarea id="repSummary" placeholder="כתוב כאן את סיכום הבדיקה הכללי והנחיות להמשך..."></textarea></div>
+
+            <div class="full-width section-title">תיעוד ותמונות מהשטח <button class="add-btn" onclick="addImageBlock()">+ הוסף תמונה</button></div>
+            
+            <div id="existingPdfContainer" class="full-width" style="display:none; text-align:center; background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba;"></div>
+            <div id="imagesContainer" class="full-width"></div>
+
+            <!-- אזור החתימה הדיגיטלית -->
+            <div class="full-width section-title">חתימת הבודק</div>
+            <div class="full-width" style="text-align: center;">
+                <p style="color:#666; font-size:14px; margin-top:0;">חתום בעזרת האצבע (או העכבר) בתוך המסגרת</p>
+                <canvas id="signatureCanvas" width="400" height="200"></canvas><br>
+                <button class="add-btn" style="background:#6c757d; margin-top: 10px;" onclick="clearSignature()">מחק חתימה ונסה שוב</button>
+            </div>
+
+            <div class="full-width section-title">הגדרות סיום ושליחה</div>
+            <div class="full-width" style="background:#e8f4fd; padding:15px; border-radius:8px; border:1px solid #b8daff;">
+                <label style="display:flex; align-items:center; gap:12px; cursor:pointer; font-size:16px; margin: 0;">
+                    <input type="checkbox" id="sendEmailCheckbox" style="width:24px; height:24px;" checked>
+                    שמור דוח, ייצר PDF ושלח מיד למייל של הצוות
+                </label>
+            </div>
+        </div>
+        
+        <button class="action-btn" id="submitRepBtn" onclick="saveReport()">צור דוח ושמור PDF 📄</button>
+    </div>
+
+    <!-- כרטסת 4: רשימת דוחות -->
+    <div id="reportListTab" class="tab-content">
+        <h3 style="color: #444; margin-top: 0;">לחץ על דוח כדי לפתוח לעריכה</h3>
+        <input type="text" id="reportSearch" class="search-box" placeholder="חפש לפי פרויקט, תאריך או אלמנט..." onkeyup="filterTable('reportSearch', 'reportsTable')">
+        
+        <table id="reportsTable">
+            <thead><tr><th>מספר דוח</th><th>תאריך</th><th>שם פרויקט</th><th>אלמנט נבדק</th><th>קישור ל-PDF</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="loadingMsg">מעבד נתונים ושומר... אנא המתן ⏳</div>
+</div>
+
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxST1VAYy03uKXfCPzA6xTj5rpJLRIn3XSrJclSYb8JwBxjofUd2U26pbz_3-kRNTXsRA/exec'; // <-- חובה למלא!
+    let allProjects = [];
+    let allReports = [];
+
+    window.onload = () => { initNewProject(); initNewReport(); fetchAllData(); setupSignatureCanvas(); };
+
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btnElement.classList.add('active');
+        window.scrollTo(0, 0); 
+    }
+
+    function filterTable(inputId, tableId) {
+        const input = document.getElementById(inputId);
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById(tableId);
+        const tr = table.getElementsByTagName('tr');
+        for (let i = 1; i < tr.length; i++) {
+            let rowText = tr[i].textContent.toLowerCase();
+            tr[i].style.display = rowText.includes(filter) ? "" : "none";
+        }
+    }
+
+    let isSigned = false;
+    function setupSignatureCanvas() {
+        const sigCanvas = document.getElementById('signatureCanvas');
+        const sigCtx = sigCanvas.getContext('2d');
+        let isSigning = false;
+
+        function getSigPos(e) {
+            const rect = sigCanvas.getBoundingClientRect();
+            const scaleX = sigCanvas.width / rect.width;
+            const scaleY = sigCanvas.height / rect.height;
+            let clientX = e.clientX, clientY = e.clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        }
+
+        function startSig(e) {
+            isSigning = true;
+            isSigned = true;
+            const pos = getSigPos(e);
+            sigCtx.beginPath();
+            sigCtx.moveTo(pos.x, pos.y);
+            if(e.cancelable) e.preventDefault(); 
+        }
+
+        function drawSig(e) {
+            if(!isSigning) return;
+            const pos = getSigPos(e);
+            sigCtx.strokeStyle = "#000080"; 
+            sigCtx.lineWidth = 3;
+            sigCtx.lineCap = 'round';
+            sigCtx.lineTo(pos.x, pos.y);
+            sigCtx.stroke();
+            if(e.cancelable) e.preventDefault();
+        }
+
+        function stopSig() { isSigning = false; }
+
+        sigCanvas.addEventListener('mousedown', startSig);
+        sigCanvas.addEventListener('mousemove', drawSig);
+        sigCanvas.addEventListener('mouseup', stopSig);
+        sigCanvas.addEventListener('mouseout', stopSig);
+        sigCanvas.addEventListener('touchstart', startSig, { passive: false });
+        sigCanvas.addEventListener('touchmove', drawSig, { passive: false });
+        sigCanvas.addEventListener('touchend', stopSig);
+    }
+
+    function clearSignature() {
+        const sigCanvas = document.getElementById('signatureCanvas');
+        const sigCtx = sigCanvas.getContext('2d');
+        sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+        isSigned = false;
+    }
+
+    async function fetchAllData() {
+        document.querySelector('#projectsTable tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;">טוען נתונים מהשרת...</td></tr>';
+        document.querySelector('#reportsTable tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;">טוען נתונים מהשרת...</td></tr>';
+        
+        try {
+            const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_all_data' }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+            if (!res.ok) throw new Error("תקלת רשת");
+            
+            const data = await res.json();
+            allProjects = data.projects || [];
+            allReports = data.reports || [];
+            
+            const select = document.getElementById('repProject');
+            select.innerHTML = '<option value="">-- בחר פרויקט --</option>';
+            allProjects.forEach(p => { select.innerHTML += `<option value="${p.name}">${p.name}</option>`; });
+            
+            const pTbody = document.querySelector('#projectsTable tbody');
+            pTbody.innerHTML = '';
+            if(allProjects.length === 0) pTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">אין פרויקטים</td></tr>';
+            allProjects.forEach((p, idx) => {
+                const tr = document.createElement('tr');
+                tr.onclick = () => loadProjectForEdit(idx);
+                tr.innerHTML = `
+                    <td data-label="מספר פרויקט">${p.id}</td>
+                    <td data-label="שם הפרויקט"><strong>${p.name}</strong></td>
+                    <td data-label="מיקום">${p.location}</td>
+                    <td data-label="אנשי צוות">${p.workers ? p.workers.length : 0}</td>
+                `;
+                pTbody.appendChild(tr);
+            });
+
+            const rTbody = document.querySelector('#reportsTable tbody');
+            rTbody.innerHTML = '';
+            if(allReports.length === 0) rTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">אין דוחות להצגה</td></tr>';
+            allReports.forEach((r, idx) => {
+                const tr = document.createElement('tr');
+                tr.onclick = (e) => { if(e.target.tagName !== 'A') loadReportForEdit(idx); };
+                tr.innerHTML = `
+                    <td data-label="מספר דוח">${r.id}</td>
+                    <td data-label="תאריך">${new Date(r.date).toLocaleDateString()}</td>
+                    <td data-label="שם פרויקט"><strong>${r.projectName}</strong></td>
+                    <td data-label="אלמנט נבדק">${r.element}</td>
+                    <td data-label="מסמך PDF"><a href="${r.pdfLink}" target="_blank" style="color:#007bff; background:#e8f4fd; padding:6px 12px; border-radius:20px; display:inline-block; text-decoration:none; font-size:14px; border:1px solid #b8daff;">📄 צפה ב-PDF</a></td>
+                `;
+                rTbody.appendChild(tr);
+            });
+            
+        } catch(e) {
+            console.error(e);
+            document.querySelector('#projectsTable tbody').innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">שגיאה בטעינה.</td></tr>';
+            document.querySelector('#reportsTable tbody').innerHTML = '<tr><td colspan="5" style="color:red; text-align:center;">שגיאה בטעינה.</td></tr>';
+        }
+    }
+
+    function initNewProject() {
+        document.querySelectorAll('#formTab input').forEach(inp => inp.value = '');
+        document.getElementById('projId').value = "PRJ-" + Date.now();
+        document.getElementById('projDate').valueAsDate = new Date();
+        document.getElementById('workersContainer').innerHTML = '';
+        addWorkerRow();
+        document.getElementById('submitProjBtn').innerText = "שמור פרויקט 💾";
+    }
+
+    function loadProjectForEdit(index) {
+        const p = allProjects[index];
+        document.getElementById('projId').value = p.id;
+        if(p.date) document.getElementById('projDate').valueAsDate = new Date(p.date);
+        document.getElementById('projName').value = p.name || '';
+        document.getElementById('projLocation').value = p.location || '';
+        document.getElementById('projEntrepreneur').value = p.entrepreneur || '';
+        document.getElementById('projEngineer').value = p.engineer || '';
+
+        document.getElementById('workersContainer').innerHTML = '';
+        if (p.workers && p.workers.length > 0) {
+            p.workers.forEach(w => addWorkerRow(w.name, w.role, w.email));
+        } else { addWorkerRow(); }
+
+        document.getElementById('submitProjBtn').innerText = "עדכן פרויקט קיים 🔄";
+        switchTab('formTab', document.querySelectorAll('.tab-btn')[0]); 
+    }
+
+    function addWorkerRow(name='', role='', email='') {
+        const div = document.createElement('div');
+        div.className = 'dynamic-row';
+        div.innerHTML = `
+            <input type="text" class="w-name" placeholder="שם העובד" value="${name}">
+            <input type="text" class="w-role" placeholder="תפקיד" value="${role}">
+            <input type="email" class="w-email" placeholder="אימייל" value="${email}">
+            <button class="remove-btn" onclick="this.parentElement.remove()">X</button>
+        `;
+        document.getElementById('workersContainer').appendChild(div);
+    }
+
+    async function saveProject() {
+        const name = document.getElementById('projName').value;
+        if(!name) return alert("חובה למלא שם פרויקט!");
+        const workers = [];
+        document.querySelectorAll('#workersContainer .dynamic-row').forEach(row => {
+            workers.push({ name: row.querySelector('.w-name').value, role: row.querySelector('.w-role').value, email: row.querySelector('.w-email').value });
+        });
+        await sendData({ action: 'save_project', id: document.getElementById('projId').value, date: document.getElementById('projDate').value, name: name, location: document.getElementById('projLocation').value, entrepreneur: document.getElementById('projEntrepreneur').value, engineer: document.getElementById('projEngineer').value, workers: workers });
+        initNewProject();
+        fetchAllData();
+    }
+
+    function initNewReport() {
+        document.getElementById('repId').value = "REP-" + Date.now();
+        document.getElementById('repDate').valueAsDate = new Date();
+        document.getElementById('repProject').value = "";
+        document.getElementById('repElement').value = "";
+        document.getElementById('repInspector').value = "";
+        document.getElementById('repSummary').value = "";
+        document.getElementById('attendeesContainer').innerHTML = '';
+        document.getElementById('remarksContainer').innerHTML = '';
+        document.getElementById('descriptionsContainer').innerHTML = '';
+        document.getElementById('imagesContainer').innerHTML = ''; 
+        document.getElementById('existingPdfContainer').style.display = 'none';
+        
+        clearSignature();
+
+        document.getElementsByName('inspectionType')[0].checked = true; 
+        addDynamicField('attendeesContainer', 'שם הנוכח');
+        document.getElementById('submitRepBtn').innerText = "צור דוח, שמור PDF ושלח 📄✉️";
+    }
+
+    function loadReportForEdit(index) {
+        const r = allReports[index];
+        document.getElementById('repId').value = r.id;
+        if(r.date) document.getElementById('repDate').valueAsDate = new Date(r.date);
+        
+        document.getElementById('repProject').value = r.projectName;
+        document.getElementById('repElement').value = r.element;
+        document.getElementById('repInspector').value = r.inspector;
+        document.getElementById('repSummary').value = r.summary;
+        
+        document.getElementsByName('inspectionType').forEach(radio => {
+            if(radio.value === r.inspectionType) radio.checked = true;
+        });
+
+        document.getElementById('attendeesContainer').innerHTML = '';
+        document.getElementById('remarksContainer').innerHTML = '';
+        document.getElementById('descriptionsContainer').innerHTML = '';
+        
+        try {
+            const att = JSON.parse(r.attendees);
+            if(att && att.length > 0) att.forEach(val => restoreDynamicField('attendeesContainer', val, 'שם הנוכח')); else addDynamicField('attendeesContainer', 'שם הנוכח');
+            const rem = JSON.parse(r.remarks);
+            if(rem && rem.length > 0) rem.forEach(val => restoreDynamicField('remarksContainer', val, 'הערה'));
+            const des = JSON.parse(r.descriptions);
+            if(des && des.length > 0) des.forEach(val => restoreDynamicField('descriptionsContainer', val, 'תיאור'));
+        } catch(e) {}
+
+        document.getElementById('imagesContainer').innerHTML = ''; 
+        const pdfContainer = document.getElementById('existingPdfContainer');
+        pdfContainer.style.display = 'block';
+        pdfContainer.innerHTML = `<p style="color:#666; margin-bottom:10px; font-weight:bold;">הדוח מכיל תמונות וחתימה קודמים ב-PDF.</p>
+                                  <a href="${r.pdfLink}" target="_blank" class="existing-pdf-link" style="margin-bottom:10px;">📄 פתח את המסמך הקיים</a>`;
+
+        clearSignature();
+        document.getElementById('submitRepBtn').innerText = "עדכן דוח ושמור PDF חדש 🔄";
+        switchTab('reportTab', document.querySelectorAll('.tab-btn')[2]);
+    }
+
+    function addDynamicField(containerId, placeholder) {
+        const div = document.createElement('div');
+        div.className = 'dynamic-row';
+        div.innerHTML = `<input type="text" class="dyn-val" placeholder="${placeholder}">
+                         <button class="remove-btn" onclick="this.parentElement.remove()">X</button>`;
+        document.getElementById(containerId).appendChild(div);
+    }
+
+    function restoreDynamicField(containerId, value, placeholder) {
+        const div = document.createElement('div');
+        div.className = 'dynamic-row';
+        div.innerHTML = `<input type="text" class="dyn-val" placeholder="${placeholder}" value="${value}">
+                         <button class="remove-btn" onclick="this.parentElement.remove()">X</button>`;
+        document.getElementById(containerId).appendChild(div);
+    }
+
+    function collectDynamic(containerId) {
+        return Array.from(document.querySelectorAll(`#${containerId} .dyn-val`)).map(inp => inp.value.trim()).filter(v => v);
+    }
+
+    // ==========================================
+    // מערכת צילום והעלאת תמונות - משודרגת עם מצלמה!
+    // ==========================================
+    let imageCounter = 0;
+    function addImageBlock() {
+        imageCounter++;
+        const blockId = 'imgBlock_' + imageCounter;
+        const div = document.createElement('div');
+        div.className = 'image-block';
+        div.id = blockId;
+        
+        // הנה הוספת כפתורי המצלמה והגלריה
+        div.innerHTML = `
+            <button class="remove-img-btn" onclick="document.getElementById('${blockId}').remove()">הסר בלוק</button>
+            
+            <div class="upload-options" style="margin-top:40px; display:flex; gap:15px; justify-content:center; flex-wrap:wrap;">
+                <label class="add-btn" style="background:#28a745; cursor:pointer; flex:1; padding:15px; font-size:18px; display:flex; justify-content:center; align-items:center;">
+                    📸 צלם בשטח
+                    <!-- capture="environment" אומר לטלפון לפתוח מצלמה אחורית -->
+                    <input type="file" accept="image/*" capture="environment" onchange="loadImageToCanvas(this, '${blockId}')" style="display:none;">
+                </label>
+                
+                <label class="add-btn" style="background:#17a2b8; cursor:pointer; flex:1; padding:15px; font-size:18px; display:flex; justify-content:center; align-items:center;">
+                    🖼️ בחר מגלריה
+                    <input type="file" accept="image/*" onchange="loadImageToCanvas(this, '${blockId}')" style="display:none;">
+                </label>
+            </div>
+
+            <div class="canvas-area" style="display:none;">
+                <div class="canvas-toolbar">
+                    <input type="color" class="color-picker" value="#ff0000" style="width:40px; height:40px; padding:0; border:none; cursor:pointer;">
+                    <input type="range" class="line-width" min="1" max="15" value="3" style="width:100px;">
+                    <button class="add-btn mode-draw" onclick="setCanvasMode('${blockId}', 'draw')">✎ צייר</button>
+                    <button class="add-btn mode-text" onclick="setCanvasMode('${blockId}', 'text')">T טקסט</button>
+                    <button class="add-btn" style="background:#dc3545;" onclick="undoCanvas('${blockId}')">↶ נקה</button>
+                </div>
+                <canvas></canvas>
+            </div>
+        `;
+        document.getElementById('imagesContainer').appendChild(div);
+        div.dataset.mode = 'draw'; 
+    }
+
+    function loadImageToCanvas(inputElem, blockId) {
+        const file = inputElem.files[0];
+        if(!file) return;
+        
+        const block = document.getElementById(blockId);
+        const canvas = block.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                block.dataset.originalImg = canvas.toDataURL(); 
+                
+                // הסתרת כפתורי הבחירה והצגת התמונה לציור
+                block.querySelector('.upload-options').style.display = 'none';
+                block.querySelector('.canvas-area').style.display = 'block';
+                
+                setupResponsiveCanvasEvents(block);
+            };
+            img.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+
+    function setCanvasMode(blockId, mode) { document.getElementById(blockId).dataset.mode = mode; }
+    function undoCanvas(blockId) {
+        const block = document.getElementById(blockId);
+        const ctx = block.querySelector('canvas').getContext('2d');
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = block.dataset.originalImg;
+    }
+
+    function setupResponsiveCanvasEvents(block) {
+        const canvas = block.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX = e.clientX, clientY = e.clientY;
+            if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        }
+
+        function startDraw(e) {
+            if(block.dataset.mode === 'text') {
+                const pos = getPointerPos(e);
+                const txt = prompt("הכנס טקסט:");
+                if(txt) {
+                    ctx.fillStyle = block.querySelector('.color-picker').value;
+                    const width = block.querySelector('.line-width').value;
+                    ctx.font = `${width * 15}px Arial`;
+                    ctx.fillText(txt, pos.x, pos.y);
+                }
+            } else {
+                isDrawing = true;
+                const pos = getPointerPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            }
+            if(e.cancelable) e.preventDefault();
+        }
+
+        function doDraw(e) {
+            if(!isDrawing || block.dataset.mode === 'text') return;
+            const pos = getPointerPos(e);
+            ctx.strokeStyle = block.querySelector('.color-picker').value;
+            ctx.lineWidth = block.querySelector('.line-width').value * 2; 
+            ctx.lineCap = 'round';
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            if(e.cancelable) e.preventDefault();
+        }
+
+        function stopDraw() { isDrawing = false; }
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', doDraw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseout', stopDraw);
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', doDraw, { passive: false });
+        canvas.addEventListener('touchend', stopDraw);
+    }
+
+    async function saveReport() {
+        const projName = document.getElementById('repProject').value;
+        if(!projName) return alert("חובה לבחור פרויקט מהרשימה!");
+
+        let selectedInspectionType = '';
+        document.getElementsByName('inspectionType').forEach(r => { if(r.checked) selectedInspectionType = r.value; });
+
+        const projectData = allProjects.find(p => p.name === projName);
+        let emails = [];
+        if(projectData && projectData.workers) emails = projectData.workers.map(w => w.email);
+
+        const imagesB64 = [];
+        document.querySelectorAll('.image-block canvas').forEach(c => {
+            if(c.width > 0) imagesB64.push(c.toDataURL("image/png").split(',')[1]);
+        });
+
+        const sigCanvas = document.getElementById('signatureCanvas');
+
+        const payload = {
+            action: 'save_report',
+            reportId: document.getElementById('repId').value,
+            date: document.getElementById('repDate').value,
+            inspectionType: selectedInspectionType, 
+            projectName: projName,
+            element: document.getElementById('repElement').value,
+            inspector: document.getElementById('repInspector').value,
+            attendees: collectDynamic('attendeesContainer'),
+            remarks: collectDynamic('remarksContainer'),
+            descriptions: collectDynamic('descriptionsContainer'),
+            summary: document.getElementById('repSummary').value,
+            images: imagesB64, 
+            signature: isSigned ? sigCanvas.toDataURL("image/png").split(',')[1] : null, 
+            sendEmail: document.getElementById('sendEmailCheckbox').checked,
+            distributionList: emails 
+        };
+
+        await sendData(payload);
+        initNewReport();
+        fetchAllData(); 
+    }
+
+    async function sendData(payload) {
+        document.getElementById('loadingMsg').style.display = 'block';
+        try {
+            const response = await fetch(scriptURL, { 
+                method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            });
+            const result = await response.json();
+            if(result.status === 'success') {
+                let msg = "הפעולה בוצעה בהצלחה!";
+                if(result.pdfLink) msg += "\n\nה-PDF נשמר וההרשאות פתוחות לצפייה.\nקישור ישיר: " + result.pdfLink;
+                alert(msg);
+            } else {
+                alert("שגיאה מהשרת: " + result.message);
+            }
+        } catch (error) {
+            alert("שגיאת תקשורת: " + error);
+        } finally {
+            document.getElementById('loadingMsg').style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
