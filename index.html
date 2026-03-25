@@ -45,7 +45,12 @@
 
         .image-block { border: 2px dashed #007bff; padding: 20px; border-radius: 12px; margin-bottom: 15px; background: #f8fbfc; position: relative; text-align: center; }
         .image-block .remove-img-btn { position: absolute; top: 10px; left: 10px; background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; z-index: 10;}
-        .canvas-toolbar { background: #343a40; padding: 12px; border-radius: 8px; margin-top: 15px; color: white; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+        
+        /* סרגל כלים משופר למובייל */
+        .canvas-toolbar { background: #343a40; padding: 12px; border-radius: 8px; margin-top: 15px; color: white; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+        .canvas-toolbar button { padding: 10px 14px; font-size: 16px; flex: 0 1 auto; }
+        .canvas-toolbar button.active { background-color: #007bff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        
         canvas { border: 2px solid #007bff; border-radius: 8px; cursor: crosshair; display: block; margin: 15px auto 0; max-width: 100%; height: auto; touch-action: none; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
         
         #signatureCanvas { border: 2px dashed #999; background: #fffdf2; max-width: 100%; width: 400px; height: 200px; margin: 0 auto; cursor: crosshair; touch-action: none; border-radius: 12px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);}
@@ -87,7 +92,6 @@
         <button class="tab-btn" onclick="switchTab('reportListTab', this); fetchAllData();">רשימת דוחות</button>
     </div>
 
-    <!-- כרטסת 1: יצירת פרויקט -->
     <div id="formTab" class="tab-content active">
         <button class="add-btn" onclick="initNewProject()" style="background:#6c757d; margin-bottom:20px; width: 100%; padding: 12px; font-size: 16px;">+ פרויקט חדש / נקה טופס</button>
         <div class="form-grid">
@@ -104,7 +108,6 @@
         <button class="action-btn" id="submitProjBtn" onclick="saveProject()">שמור פרויקט 💾</button>
     </div>
 
-    <!-- כרטסת 2: רשימת פרויקטים -->
     <div id="listTab" class="tab-content">
         <input type="text" id="projectSearch" class="search-box" placeholder="חפש לפי פרויקט, עיר, מספר..." onkeyup="filterTable('projectSearch', 'projectsTable')">
         <table id="projectsTable">
@@ -113,7 +116,6 @@
         </table>
     </div>
 
-    <!-- כרטסת 3: עריכת / יצירת דוח -->
     <div id="reportTab" class="tab-content">
         <div class="form-grid">
             <div><label>מספר דוח</label><input type="text" id="repId" readonly></div>
@@ -153,7 +155,6 @@
             <div id="existingPdfContainer" class="full-width" style="display:none; text-align:center; background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba;"></div>
             <div id="imagesContainer" class="full-width"></div>
 
-            <!-- אזור החתימה הדיגיטלית -->
             <div class="full-width section-title">חתימת הבודק</div>
             <div class="full-width" style="text-align: center;">
                 <p style="color:#666; font-size:14px; margin-top:0;">חתום בעזרת האצבע (או העכבר) בתוך המסגרת</p>
@@ -173,7 +174,6 @@
         <button class="action-btn" id="submitRepBtn" onclick="saveReport()">צור דוח ושמור PDF 📄</button>
     </div>
 
-    <!-- כרטסת 4: רשימת דוחות -->
     <div id="reportListTab" class="tab-content">
         <h3 style="color: #444; margin-top: 0;">לחץ על דוח כדי לפתוח לעריכה</h3>
         <input type="text" id="reportSearch" class="search-box" placeholder="חפש לפי פרויקט, תאריך או אלמנט..." onkeyup="filterTable('reportSearch', 'reportsTable')">
@@ -188,7 +188,7 @@
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxS-ljjkqb2syFpy7ZjvYUmjDM2x84XrgnnM5xHtgegL8ln996QlsQTVRdcXXkJxy_P/exec'; // <-- חובה למלא!
+    const scriptURL = 'הדבק_כאן_את_הקישור_מגוגל_APPS_SCRIPT_שלך'; // <-- חובה למלא!
     let allProjects = [];
     let allReports = [];
 
@@ -257,6 +257,7 @@
         sigCanvas.addEventListener('mousemove', drawSig);
         sigCanvas.addEventListener('mouseup', stopSig);
         sigCanvas.addEventListener('mouseout', stopSig);
+
         sigCanvas.addEventListener('touchstart', startSig, { passive: false });
         sigCanvas.addEventListener('touchmove', drawSig, { passive: false });
         sigCanvas.addEventListener('touchend', stopSig);
@@ -453,7 +454,7 @@
     }
 
     // ==========================================
-    // מערכת צילום והעלאת תמונות - משודרגת עם מצלמה!
+    // מערכת צילום ועריכת תמונות - משודרגת עם צורות הנדסיות!
     // ==========================================
     let imageCounter = 0;
     function addImageBlock() {
@@ -463,14 +464,12 @@
         div.className = 'image-block';
         div.id = blockId;
         
-        // הנה הוספת כפתורי המצלמה והגלריה
         div.innerHTML = `
             <button class="remove-img-btn" onclick="document.getElementById('${blockId}').remove()">הסר בלוק</button>
             
             <div class="upload-options" style="margin-top:40px; display:flex; gap:15px; justify-content:center; flex-wrap:wrap;">
                 <label class="add-btn" style="background:#28a745; cursor:pointer; flex:1; padding:15px; font-size:18px; display:flex; justify-content:center; align-items:center;">
                     📸 צלם בשטח
-                    <!-- capture="environment" אומר לטלפון לפתוח מצלמה אחורית -->
                     <input type="file" accept="image/*" capture="environment" onchange="loadImageToCanvas(this, '${blockId}')" style="display:none;">
                 </label>
                 
@@ -482,17 +481,24 @@
 
             <div class="canvas-area" style="display:none;">
                 <div class="canvas-toolbar">
-                    <input type="color" class="color-picker" value="#ff0000" style="width:40px; height:40px; padding:0; border:none; cursor:pointer;">
-                    <input type="range" class="line-width" min="1" max="15" value="3" style="width:100px;">
-                    <button class="add-btn mode-draw" onclick="setCanvasMode('${blockId}', 'draw')">✎ צייר</button>
-                    <button class="add-btn mode-text" onclick="setCanvasMode('${blockId}', 'text')">T טקסט</button>
-                    <button class="add-btn" style="background:#dc3545;" onclick="undoCanvas('${blockId}')">↶ נקה</button>
+                    <input type="color" class="color-picker" value="#ff0000" style="width:45px; height:45px; padding:0; border:none; cursor:pointer; border-radius:5px;">
+                    <input type="range" class="line-width" min="1" max="15" value="4" style="width:90px; cursor:pointer;">
+                    
+                    <button class="add-btn mode-draw active" onclick="setCanvasTool('${blockId}', 'draw', this)">✎ חופשי</button>
+                    <button class="add-btn mode-rect" onclick="setCanvasTool('${blockId}', 'rect', this)">🟥 מלבן</button>
+                    <button class="add-btn mode-circle" onclick="setCanvasTool('${blockId}', 'circle', this)">⭕ עיגול</button>
+                    <button class="add-btn mode-line" onclick="setCanvasTool('${blockId}', 'line', this)">📏 קו</button>
+                    <button class="add-btn mode-text" onclick="setCanvasTool('${blockId}', 'text', this)">T טקסט</button>
+                    
+                    <button class="add-btn" style="background:#dc3545;" onclick="undoCanvas('${blockId}')">↶ נקה הכל</button>
                 </div>
                 <canvas></canvas>
             </div>
         `;
         document.getElementById('imagesContainer').appendChild(div);
-        div.dataset.mode = 'draw'; 
+        
+        // הגדרת כלי ברירת מחדל
+        div.dataset.tool = 'draw'; 
     }
 
     function loadImageToCanvas(inputElem, blockId) {
@@ -510,21 +516,31 @@
                 canvas.width = img.width;
                 canvas.height = img.height;
                 ctx.drawImage(img, 0, 0);
-                block.dataset.originalImg = canvas.toDataURL(); 
+                block.dataset.originalImg = canvas.toDataURL(); // שמירת הרקע המקורי ל"ניקוי"
                 
-                // הסתרת כפתורי הבחירה והצגת התמונה לציור
                 block.querySelector('.upload-options').style.display = 'none';
                 block.querySelector('.canvas-area').style.display = 'block';
                 
-                setupResponsiveCanvasEvents(block);
+                setupEngineeringCanvasEvents(block);
             };
             img.src = e.target.result;
         }
         reader.readAsDataURL(file);
     }
 
-    function setCanvasMode(blockId, mode) { document.getElementById(blockId).dataset.mode = mode; }
+    // פונקציה חדשה להחלפת כלים ועדכון המראה של הכפתורים
+    function setCanvasTool(blockId, tool, btnElement) { 
+        const block = document.getElementById(blockId);
+        block.dataset.tool = tool; 
+        
+        // הסרת מחלקת active מכל הכפתורים בסרגל זה
+        block.querySelectorAll('.canvas-toolbar .add-btn').forEach(btn => btn.classList.remove('active'));
+        // הוספת active לכפתור שנלחץ
+        btnElement.classList.add('active');
+    }
+
     function undoCanvas(blockId) {
+        if(!confirm("האם אתה בטוח שברצונך למחוק את כל הסימונים על תמונה זו?")) return;
         const block = document.getElementById(blockId);
         const ctx = block.querySelector('canvas').getContext('2d');
         const img = new Image();
@@ -532,10 +548,17 @@
         img.src = block.dataset.originalImg;
     }
 
-    function setupResponsiveCanvasEvents(block) {
+    // לוגיקה חדשה ומורכבת לציור צורות הנדסיות
+    function setupEngineeringCanvasEvents(block) {
         const canvas = block.querySelector('canvas');
         const ctx = canvas.getContext('2d');
+        
+        // משתנים למעקב אחרי מצב הציור
         let isDrawing = false;
+        let startX = 0;
+        let startY = 0;
+        // משתנה לאחסון מצב הקנבס לפני תחילת מתיחת הצורה (עבור תצוגה מקדימה)
+        let snapshot = null;
 
         function getPointerPos(e) {
             const rect = canvas.getBoundingClientRect();
@@ -546,38 +569,100 @@
             return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
         }
 
+        // פונקציית עזר לשחזור המצב הלפני-אחרון (עבור תצוגה מקדימה חלקת)
+        function restoreSnapshot() {
+            if(snapshot) ctx.putImageData(snapshot, 0, 0);
+        }
+
         function startDraw(e) {
-            if(block.dataset.mode === 'text') {
-                const pos = getPointerPos(e);
+            const tool = block.dataset.tool;
+            const pos = getPointerPos(e);
+            
+            if(tool === 'text') {
                 const txt = prompt("הכנס טקסט:");
                 if(txt) {
                     ctx.fillStyle = block.querySelector('.color-picker').value;
                     const width = block.querySelector('.line-width').value;
-                    ctx.font = `${width * 15}px Arial`;
+                    ctx.font = `bold ${width * 10}px Arial`; // גודל טקסט פרופורציונלי לעובי הקו
+                    ctx.textBaseline = 'top';
                     ctx.fillText(txt, pos.x, pos.y);
                 }
-            } else {
-                isDrawing = true;
-                const pos = getPointerPos(e);
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y);
+                return; // טקסט לא דורש מתיחה
             }
+
+            // תחילת מצב ציור/מתיחה
+            isDrawing = true;
+            startX = pos.x;
+            startY = pos.y;
+            
+            // הגדרות סגנון הציור
+            ctx.strokeStyle = block.querySelector('.color-picker').value;
+            ctx.lineWidth = block.querySelector('.line-width').value;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if(tool === 'draw') {
+                // ציור חופשי מתחיל מיד
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+            } else {
+                // עבור צורות, שומרים צילום מסך של המצב הנוכחי כדי לאפשר "מתיחה"
+                snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            }
+            
             if(e.cancelable) e.preventDefault();
         }
 
         function doDraw(e) {
-            if(!isDrawing || block.dataset.mode === 'text') return;
+            if(!isDrawing) return;
+            const tool = block.dataset.tool;
             const pos = getPointerPos(e);
-            ctx.strokeStyle = block.querySelector('.color-picker').value;
-            ctx.lineWidth = block.querySelector('.line-width').value * 2; 
-            ctx.lineCap = 'round';
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
+            const currentX = pos.x;
+            const currentY = pos.y;
+
+            if(tool === 'draw') {
+                // ציור חופשי - פשוט ממשיכים את הקו
+                ctx.lineTo(currentX, currentY);
+                ctx.stroke();
+            } else {
+                // עבור צורות הנדסיות - מבצעים לוגיקת "מתיחה" (Rubber-banding)
+                
+                restoreSnapshot(); // מוחקים את הציור הזמני הקודם על ידי שחזור הרקע
+                ctx.beginPath(); // מתחילים הגדרת צורה חדשה
+
+                if(tool === 'rect') {
+                    // חישוב רוחב וגובה (יכול להיות שלילי)
+                    const width = currentX - startX;
+                    const height = currentY - startY;
+                    ctx.rect(startX, startY, width, height);
+                } 
+                else if(tool === 'circle') {
+                    // חישוב רדיוס באמצעות משפט פיתגורס (מרחק בין נקודת התחלה לסוף)
+                    const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+                    ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                } 
+                else if(tool === 'line') {
+                    // קו ישר פשוט
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(currentX, currentY);
+                }
+                
+                ctx.stroke(); // מציירים את הצורה הזמנית הנוכחית
+            }
+            
             if(e.cancelable) e.preventDefault();
         }
 
-        function stopDraw() { isDrawing = false; }
+        function stopDraw() { 
+            if(isDrawing && block.dataset.tool !== 'draw' && block.dataset.tool !== 'text') {
+                // עבור צורות, רק כשמרמים את האצבע הצורה נשמרת סופית על הקנבס
+                // אין צורך בפקודה מיוחדת, היא כבר צוירה ב-doDraw האחרון
+            }
+            isDrawing = false; 
+            snapshot = null; // ניקוי הזיכרון הזמני
+        }
 
+        // חיבור אירועים
         canvas.addEventListener('mousedown', startDraw);
         canvas.addEventListener('mousemove', doDraw);
         canvas.addEventListener('mouseup', stopDraw);
