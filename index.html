@@ -47,11 +47,13 @@
         .image-block { border: 2px dashed #007bff; padding: 20px; border-radius: 12px; margin-bottom: 15px; background: #f8fbfc; position: relative; text-align: center; }
         .image-block .remove-img-btn { position: absolute; top: 10px; left: 10px; background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; z-index: 10;}
         
-        .canvas-toolbar { background: #343a40; padding: 12px; border-radius: 8px; margin-top: 15px; color: white; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+        .canvas-toolbar { background: #343a40; padding: 12px; border-radius: 8px; margin-top: 15px; margin-bottom: 10px; color: white; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
         .canvas-toolbar button { padding: 10px 14px; font-size: 16px; flex: 0 1 auto; }
         .canvas-toolbar button.active { background-color: #007bff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
         
-        canvas { border: 2px solid #007bff; border-radius: 8px; cursor: crosshair; display: block; margin: 15px auto 0; max-width: 100%; height: auto; touch-action: none; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
+        /* עטיפה חכמה לקנבס כדי לאפשר תיבות טקסט מרחפות עליו */
+        .canvas-wrapper { position: relative; display: inline-block; max-width: 100%; border: 2px solid #007bff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: white;}
+        canvas { display: block; max-width: 100%; height: auto; touch-action: none; cursor: crosshair; }
         
         #signatureCanvas { border: 2px dashed #999; background: #fffdf2; max-width: 100%; width: 400px; height: 200px; margin: 0 auto; cursor: crosshair; touch-action: none; border-radius: 12px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);}
 
@@ -190,7 +192,7 @@
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxS-ljjkqb2syFpy7ZjvYUmjDM2x84XrgnnM5xHtgegL8ln996QlsQTVRdcXXkJxy_P/exec'; // <-- חובה למלא!
+    const scriptURL = 'הדבק_כאן_את_הקישור_מגוגל_APPS_SCRIPT_שלך'; // <-- חובה למלא!
     let allProjects = [];
     let allReports = [];
 
@@ -271,7 +273,6 @@
         isSigned = false;
     }
 
-    // פונקציה חכמה: רושמת "טוען" רק כשבאמת צריך למשוך מאפס (showLoading = true)
     async function fetchAllData(showLoading = false) {
         const pTbody = document.querySelector('#projectsTable tbody');
         const rTbody = document.querySelector('#reportsTable tbody');
@@ -283,9 +284,15 @@
         
         try {
             const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'get_all_data' }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
-            if (!res.ok) throw new Error("תקלת רשת");
+            if (!res.ok) throw new Error("תקלת רשת. קוד שגיאה: " + res.status);
             
-            const data = await res.json();
+            const rawText = await res.text();
+            if(!rawText || rawText.trim() === "") throw new Error("גוגל החזיר תשובה ריקה. בדוק שעשית New Version ב-Deploy");
+            
+            let data;
+            try { data = JSON.parse(rawText); } 
+            catch(e) { console.error(rawText); throw new Error("השרת החזיר שגיאה במקום נתונים."); }
+
             allProjects = data.projects || [];
             allReports = data.reports || [];
             
@@ -324,8 +331,8 @@
             
         } catch(e) {
             console.error(e);
-            pTbody.innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">שגיאה בטעינה.</td></tr>';
-            rTbody.innerHTML = '<tr><td colspan="5" style="color:red; text-align:center;">שגיאה בטעינה.</td></tr>';
+            pTbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center; font-weight:bold;">${e.message}</td></tr>`;
+            rTbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center; font-weight:bold;">${e.message}</td></tr>`;
         }
     }
 
@@ -377,7 +384,7 @@
         });
         await sendData({ action: 'save_project', id: document.getElementById('projId').value, date: document.getElementById('projDate').value, name: name, location: document.getElementById('projLocation').value, entrepreneur: document.getElementById('projEntrepreneur').value, engineer: document.getElementById('projEngineer').value, workers: workers });
         initNewProject();
-        fetchAllData(false); // טעינה שקטה ברקע! אין יותר הבהובים.
+        fetchAllData(false);
     }
 
     function initNewReport() {
@@ -458,6 +465,9 @@
         return Array.from(document.querySelectorAll(`#${containerId} .dyn-val`)).map(inp => inp.value.trim()).filter(v => v);
     }
 
+    // ==========================================
+    // מערכת צילום ועריכת תמונות משודרגת עם תיבות טקסט מרחפות!
+    // ==========================================
     let imageCounter = 0;
     function addImageBlock() {
         imageCounter++;
@@ -494,7 +504,10 @@
                     
                     <button class="add-btn" style="background:#dc3545;" onclick="undoCanvas('${blockId}')">↶ נקה הכל</button>
                 </div>
-                <canvas></canvas>
+                
+                <div class="canvas-wrapper">
+                    <canvas></canvas>
+                </div>
             </div>
         `;
         document.getElementById('imagesContainer').appendChild(div);
@@ -536,17 +549,38 @@
     }
 
     function undoCanvas(blockId) {
-        if(!confirm("האם אתה בטוח שברצונך למחוק את כל הסימונים על תמונה זו?")) return;
+        if(!confirm("האם למחוק הכל מתמונה זו?")) return;
         const block = document.getElementById(blockId);
         const ctx = block.querySelector('canvas').getContext('2d');
         const img = new Image();
         img.onload = () => ctx.drawImage(img, 0, 0);
         img.src = block.dataset.originalImg;
+        // מחיקת תיבות טקסט פתוחות אם יש
+        const openInputs = block.querySelectorAll('.inline-text-input');
+        openInputs.forEach(inp => inp.remove());
+    }
+
+    // פונקציה להטבעת הטקסט מהתיבה השקופה ישירות לתוך התמונה
+    function commitText(input, block, ctx) {
+        if(!input.parentElement) return; 
+        const txt = input.value.trim();
+        if(txt) {
+            const x = parseFloat(input.dataset.logicalX);
+            const y = parseFloat(input.dataset.logicalY);
+            const fontSizeCanvas = input.dataset.canvasFont;
+            
+            ctx.fillStyle = input.style.color;
+            ctx.font = `bold ${fontSizeCanvas}px Arial`;
+            ctx.textBaseline = 'top';
+            ctx.fillText(txt, x, y);
+        }
+        input.remove(); // מעלים את התיבה
     }
 
     function setupEngineeringCanvasEvents(block) {
         const canvas = block.querySelector('canvas');
         const ctx = canvas.getContext('2d');
+        const wrapper = block.querySelector('.canvas-wrapper');
         
         let isDrawing = false;
         let startX = 0, startY = 0;
@@ -565,19 +599,72 @@
 
         function startDraw(e) {
             const tool = block.dataset.tool;
-            const pos = getPointerPos(e);
             
+            // --- לוגיקת תיבת הטקסט השקופה החדשה ---
             if(tool === 'text') {
-                const txt = prompt("הכנס טקסט:");
-                if(txt) {
-                    ctx.fillStyle = block.querySelector('.color-picker').value;
-                    const width = block.querySelector('.line-width').value;
-                    ctx.font = `bold ${width * 10}px Arial`;
-                    ctx.textBaseline = 'top';
-                    ctx.fillText(txt, pos.x, pos.y);
+                const existingInput = block.querySelector('.inline-text-input');
+                if (existingInput) {
+                    commitText(existingInput, block, ctx);
+                    return; // אם לחץ מחוץ לתיבה קודמת, קודם שומר אותה ולא פותח מיד חדשה
                 }
+
+                const pos = getPointerPos(e); // המיקום האמיתי בתוך התמונה עצמה
+                
+                // חישוב המיקום על המסך עבור התיבה השקופה
+                const rect = canvas.getBoundingClientRect();
+                let clientX = e.clientX, clientY = e.clientY;
+                if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+                const cssX = clientX - rect.left;
+                const cssY = clientY - rect.top;
+
+                const input = document.createElement('input');
+                input.className = 'inline-text-input';
+                input.type = 'text';
+                input.placeholder = 'הקלד...';
+                
+                const color = block.querySelector('.color-picker').value;
+                const canvasFont = block.querySelector('.line-width').value * 10;
+                
+                // התאמת גודל הפונט שעל המסך לפרופורציות התמונה האמיתית
+                const scaleFactor = rect.width / canvas.width;
+                const cssFont = canvasFont * scaleFactor;
+
+                // עיצוב התיבה השקופה
+                input.style.position = 'absolute';
+                input.style.left = cssX + 'px';
+                input.style.top = cssY + 'px';
+                input.style.background = 'rgba(255, 255, 255, 0.4)'; // רקע חצי שקוף ונוח לקריאה
+                input.style.border = '2px dashed #007bff';
+                input.style.color = color;
+                input.style.fontSize = cssFont + 'px';
+                input.style.fontFamily = 'Arial';
+                input.style.fontWeight = 'bold';
+                input.style.outline = 'none';
+                input.style.zIndex = '100';
+                input.style.direction = 'rtl';
+                input.style.padding = '2px 5px';
+                input.style.borderRadius = '4px';
+                input.style.minWidth = '100px';
+
+                // שמירת הנתונים המדויקים להטבעה
+                input.dataset.logicalX = pos.x;
+                input.dataset.logicalY = pos.y;
+                input.dataset.canvasFont = canvasFont;
+
+                wrapper.appendChild(input);
+                setTimeout(() => input.focus(), 50);
+
+                const finishTextHandler = () => commitText(input, block, ctx);
+                input.addEventListener('blur', finishTextHandler); // שומר כשלוחצים החוצה
+                input.addEventListener('keydown', (evt) => { if (evt.key === 'Enter') finishTextHandler(); }); // שומר באנטר
+
+                if(e.cancelable) e.preventDefault();
                 return; 
             }
+
+            // סגירת תיבות טקסט פתוחות אם התחלנו לצייר משהו אחר
+            const openInput = block.querySelector('.inline-text-input');
+            if(openInput) commitText(openInput, block, ctx);
 
             isDrawing = true;
             startX = pos.x;
@@ -598,7 +685,7 @@
         }
 
         function doDraw(e) {
-            if(!isDrawing) return;
+            if(!isDrawing || block.dataset.tool === 'text') return;
             const tool = block.dataset.tool;
             const pos = getPointerPos(e);
             const currentX = pos.x, currentY = pos.y;
@@ -612,90 +699,4 @@
                 if(tool === 'rect') {
                     ctx.rect(startX, startY, currentX - startX, currentY - startY);
                 } else if(tool === 'circle') {
-                    const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
-                    ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
-                } else if(tool === 'line') {
-                    ctx.moveTo(startX, startY);
-                    ctx.lineTo(currentX, currentY);
-                }
-                ctx.stroke(); 
-            }
-            if(e.cancelable) e.preventDefault();
-        }
-
-        function stopDraw() { isDrawing = false; snapshot = null; }
-
-        canvas.addEventListener('mousedown', startDraw);
-        canvas.addEventListener('mousemove', doDraw);
-        canvas.addEventListener('mouseup', stopDraw);
-        canvas.addEventListener('mouseout', stopDraw);
-        canvas.addEventListener('touchstart', startDraw, { passive: false });
-        canvas.addEventListener('touchmove', doDraw, { passive: false });
-        canvas.addEventListener('touchend', stopDraw);
-    }
-
-    async function saveReport() {
-        const projName = document.getElementById('repProject').value;
-        if(!projName) return alert("חובה לבחור פרויקט מהרשימה!");
-
-        let selectedInspectionType = '';
-        document.getElementsByName('inspectionType').forEach(r => { if(r.checked) selectedInspectionType = r.value; });
-
-        const projectData = allProjects.find(p => p.name === projName);
-        let emails = [];
-        if(projectData && projectData.workers) emails = projectData.workers.map(w => w.email);
-
-        const imagesB64 = [];
-        document.querySelectorAll('.image-block canvas').forEach(c => {
-            if(c.width > 0) imagesB64.push(c.toDataURL("image/png").split(',')[1]);
-        });
-
-        const sigCanvas = document.getElementById('signatureCanvas');
-
-        const payload = {
-            action: 'save_report',
-            reportId: document.getElementById('repId').value,
-            date: document.getElementById('repDate').value,
-            inspectionType: selectedInspectionType, 
-            projectName: projName,
-            element: document.getElementById('repElement').value,
-            inspector: document.getElementById('repInspector').value,
-            attendees: collectDynamic('attendeesContainer'),
-            remarks: collectDynamic('remarksContainer'),
-            descriptions: collectDynamic('descriptionsContainer'),
-            summary: document.getElementById('repSummary').value,
-            images: imagesB64, 
-            signature: isSigned ? sigCanvas.toDataURL("image/png").split(',')[1] : null, 
-            sendEmail: document.getElementById('sendEmailCheckbox').checked,
-            distributionList: emails 
-        };
-
-        await sendData(payload);
-        initNewReport();
-        fetchAllData(false); // עדכון שקט ברקע
-    }
-
-    async function sendData(payload) {
-        document.getElementById('loadingMsg').style.display = 'block';
-        try {
-            const response = await fetch(scriptURL, { 
-                method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-            });
-            const result = await response.json();
-            if(result.status === 'success') {
-                let msg = "הפעולה בוצעה בהצלחה!";
-                if(result.pdfLink) msg += "\n\nה-PDF נשמר וההרשאות פתוחות לצפייה.\nקישור ישיר: " + result.pdfLink;
-                alert(msg);
-            } else {
-                alert("שגיאה מהשרת: " + result.message);
-            }
-        } catch (error) {
-            alert("שגיאת תקשורת: " + error);
-        } finally {
-            document.getElementById('loadingMsg').style.display = 'none';
-        }
-    }
-</script>
-
-</body>
-</html>
+                    const radius = Math.sqrt(Math.pow(currentX
