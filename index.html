@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html dir="rtl">
 <head>
@@ -192,7 +193,7 @@
 </div>
 
 <script>
-    const scriptURL = 'הדבק_כאן_את_הקישור_מגוגל_APPS_SCRIPT_שלך'; // <-- חובה למלא!
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxS-ljjkqb2syFpy7ZjvYUmjDM2x84XrgnnM5xHtgegL8ln996QlsQTVRdcXXkJxy_P/exec'; 
     let allProjects = [];
     let allReports = [];
 
@@ -699,4 +700,105 @@
                 if(tool === 'rect') {
                     ctx.rect(startX, startY, currentX - startX, currentY - startY);
                 } else if(tool === 'circle') {
-                    const radius = Math.sqrt(Math.pow(currentX
+                    const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+                    ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                } else if(tool === 'line') {
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(currentX, currentY);
+                }
+                ctx.stroke(); 
+            }
+            if(e.cancelable) e.preventDefault();
+        }
+
+        function stopDraw() { isDrawing = false; snapshot = null; }
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', doDraw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseout', stopDraw);
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', doDraw, { passive: false });
+        canvas.addEventListener('touchend', stopDraw);
+    }
+
+    async function saveReport() {
+        // נוודא שכל תיבות הטקסט הפתוחות נשמרו על התמונה לפני השליחה!
+        document.querySelectorAll('.image-block').forEach(block => {
+            const openInput = block.querySelector('.inline-text-input');
+            if(openInput) {
+                const ctx = block.querySelector('canvas').getContext('2d');
+                commitText(openInput, block, ctx);
+            }
+        });
+
+        const projName = document.getElementById('repProject').value;
+        if(!projName) return alert("חובה לבחור פרויקט מהרשימה!");
+
+        let selectedInspectionType = '';
+        document.getElementsByName('inspectionType').forEach(r => { if(r.checked) selectedInspectionType = r.value; });
+
+        const projectData = allProjects.find(p => p.name === projName);
+        let emails = [];
+        if(projectData && projectData.workers) emails = projectData.workers.map(w => w.email);
+
+        const imagesB64 = [];
+        document.querySelectorAll('.image-block canvas').forEach(c => {
+            if(c.width > 0) imagesB64.push(c.toDataURL("image/png").split(',')[1]);
+        });
+
+        const sigCanvas = document.getElementById('signatureCanvas');
+
+        const payload = {
+            action: 'save_report',
+            reportId: document.getElementById('repId').value,
+            date: document.getElementById('repDate').value,
+            inspectionType: selectedInspectionType, 
+            projectName: projName,
+            element: document.getElementById('repElement').value,
+            inspector: document.getElementById('repInspector').value,
+            attendees: collectDynamic('attendeesContainer'),
+            remarks: collectDynamic('remarksContainer'),
+            descriptions: collectDynamic('descriptionsContainer'),
+            summary: document.getElementById('repSummary').value,
+            images: imagesB64, 
+            signature: isSigned ? sigCanvas.toDataURL("image/png").split(',')[1] : null, 
+            sendEmail: document.getElementById('sendEmailCheckbox').checked,
+            distributionList: emails 
+        };
+
+        await sendData(payload);
+        initNewReport();
+        fetchAllData(false); 
+    }
+
+    async function sendData(payload) {
+        document.getElementById('loadingMsg').style.display = 'block';
+        try {
+            const response = await fetch(scriptURL, { 
+                method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            });
+            const rawText = await response.text();
+            if(!rawText || rawText.trim() === "") throw new Error("השרת החזיר תשובה ריקה. ודא שעשית New Version בגוגל!");
+            
+            let result;
+            try { result = JSON.parse(rawText); } 
+            catch(e) { console.error(rawText); throw new Error("שגיאה בשרת. פתח F12 לפרטים."); }
+
+            if(result.status === 'success') {
+                let msg = "הפעולה בוצעה בהצלחה!";
+                if(result.pdfLink) msg += "\n\nה-PDF נשמר וההרשאות פתוחות לצפייה.\nקישור ישיר: " + result.pdfLink;
+                alert(msg);
+            } else {
+                alert("שגיאה מהשרת: " + result.message);
+            }
+        } catch (error) {
+            alert("שגיאת תקשורת: " + error.message);
+        } finally {
+            document.getElementById('loadingMsg').style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
