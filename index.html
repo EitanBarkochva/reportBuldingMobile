@@ -603,6 +603,7 @@
             
             // --- לוגיקת תיבת הטקסט השקופה החדשה ---
             if(tool === 'text') {
+                const pos = getPointerPos(e);
                 const existingInput = block.querySelector('.inline-text-input');
                 if (existingInput) {
                     commitText(existingInput, block, ctx);
