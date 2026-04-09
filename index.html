@@ -600,8 +600,8 @@
 
         function startDraw(e) {
             const tool = block.dataset.tool;
-            if(tool !== 'text') {
-        const pos = getPointerPos(e);  // 👈 זה החסר!
+            const pos = getPointerPos(e);  //  המיקום האמיתי בתוך התמונה עצמה
+            if(tool !== 'text') {     
 
         isDrawing = true;
         startX = pos.x;
@@ -611,17 +611,17 @@
         ctx.lineWidth = block.querySelector('.line-width').value;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-
+            }
             // --- לוגיקת תיבת הטקסט השקופה החדשה ---
             if(tool === 'text') {
-                const pos = getPointerPos(e);
+                
                 const existingInput = block.querySelector('.inline-text-input');
                 if (existingInput) {
                     commitText(existingInput, block, ctx);
                     return; // אם לחץ מחוץ לתיבה קודמת, קודם שומר אותה ולא פותח מיד חדשה
                 }
 
-                const pos = getPointerPos(e); // המיקום האמיתי בתוך התמונה עצמה
+              
                 
                 // חישוב המיקום על המסך עבור התיבה השקופה
                 const rect = canvas.getBoundingClientRect();
