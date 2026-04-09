@@ -600,7 +600,18 @@
 
         function startDraw(e) {
             const tool = block.dataset.tool;
-            
+            if(tool !== 'text') {
+        const pos = getPointerPos(e);  // 👈 זה החסר!
+
+        isDrawing = true;
+        startX = pos.x;
+        startY = pos.y;
+
+        ctx.strokeStyle = block.querySelector('.color-picker').value;
+        ctx.lineWidth = block.querySelector('.line-width').value;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
             // --- לוגיקת תיבת הטקסט השקופה החדשה ---
             if(tool === 'text') {
                 const pos = getPointerPos(e);
